@@ -1,19 +1,17 @@
-from flask import Flask, request, render_template, jsonify
-import requests
 import os
-import json
-from datetime import datetime
-import secrets
+import requests
+from flask import Flask, request, render_template, jsonify
 
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(32)
+app.secret_key = os.urandom(24)
 
-# ==================== DEEPSEEK AI CONFIG ====================
-DEEPSEEK_API_KEY = "sk-halisi-yako-hapa"  # API key yako kutoka DeepSeek
+# ==================== DEEPSEEK AI ====================
+# BADILISHA HII NA API KEY YAKO HALISI
+DEEPSEEK_API_KEY = "sk-your-api-key-here"
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 DEEPSEEK_WEBSITE = "https://www.deepseek.com/en/"
 
-# ==================== DATA ZA MAFUNZO ====================
+# ==================== DATA ====================
 TRAINING_DATA = {
     "computer_basics": {
         "title": "Misingi ya Kompyuta",
@@ -52,7 +50,6 @@ TRAINING_DATA = {
     }
 }
 
-# ==================== HUDUMA ====================
 SERVICES = [
     {
         "id": "online_learning",
@@ -112,50 +109,13 @@ SERVICES = [
     }
 ]
 
-# ==================== VIDEO RESOURCES ====================
 VIDEO_RESOURCES = [
-    {
-        "title": "Bro Code - Programming Tutorials",
-        "description": "Mafunzo kamili ya Python, JavaScript, C++ na zaidi",
-        "url": "https://www.youtube.com/@BroCodez",
-        "icon": "fa-code",
-        "source": "YouTube"
-    },
-    {
-        "title": "freeCodeCamp - Full Courses",
-        "description": "Kozi kamili za bure za programming na IT",
-        "url": "https://www.youtube.com/@freecodecamp",
-        "icon": "fa-laptop-code",
-        "source": "YouTube"
-    },
-    {
-        "title": "Traversy Media - Web Development",
-        "description": "Mafunzo ya kisasa ya web development",
-        "url": "https://www.youtube.com/@TraversyMedia",
-        "icon": "fa-globe",
-        "source": "YouTube"
-    },
-    {
-        "title": "Programming with Mosh",
-        "description": "Mafunzo ya programming kwa urahisi na mifano",
-        "url": "https://www.youtube.com/@programmingwithmosh",
-        "icon": "fa-graduation-cap",
-        "source": "YouTube"
-    },
-    {
-        "title": "TechWorld with Nana - DevOps",
-        "description": "Mafunzo ya DevOps, Docker, Kubernetes na AWS",
-        "url": "https://www.youtube.com/@TechWorldwithNana",
-        "icon": "fa-cloud",
-        "source": "YouTube"
-    },
-    {
-        "title": "Alex The Analyst - Data Analysis",
-        "description": "Mafunzo ya data analysis na SQL",
-        "url": "https://www.youtube.com/@AlexTheAnalyst",
-        "icon": "fa-chart-bar",
-        "source": "YouTube"
-    }
+    {"title": "Bro Code - Programming Tutorials", "description": "Mafunzo kamili ya Python, JavaScript, C++", "url": "https://www.youtube.com/@BroCodez", "icon": "fa-code", "source": "YouTube"},
+    {"title": "freeCodeCamp - Full Courses", "description": "Kozi kamili za bure za programming na IT", "url": "https://www.youtube.com/@freecodecamp", "icon": "fa-laptop-code", "source": "YouTube"},
+    {"title": "Traversy Media - Web Development", "description": "Mafunzo ya kisasa ya web development", "url": "https://www.youtube.com/@TraversyMedia", "icon": "fa-globe", "source": "YouTube"},
+    {"title": "Programming with Mosh", "description": "Mafunzo ya programming kwa urahisi", "url": "https://www.youtube.com/@programmingwithmosh", "icon": "fa-graduation-cap", "source": "YouTube"},
+    {"title": "TechWorld with Nana - DevOps", "description": "Mafunzo ya DevOps, Docker, Kubernetes", "url": "https://www.youtube.com/@TechWorldwithNana", "icon": "fa-cloud", "source": "YouTube"},
+    {"title": "Alex The Analyst - Data Analysis", "description": "Mafunzo ya data analysis na SQL", "url": "https://www.youtube.com/@AlexTheAnalyst", "icon": "fa-chart-bar", "source": "YouTube"}
 ]
 
 # ==================== ROUTES ====================
@@ -178,22 +138,9 @@ def topic(topic_name):
 @app.route("/ask", methods=["POST"])
 def ask():
     user_input = request.form.get("user_input", "").strip()
-    topic = request.form.get("topic", "general")
     
     if not user_input:
-        return jsonify({"response": "Tafadhali andika swali lako.", "error": True})
-    
-    # SYSTEM PROMPT
-    system_prompt = """Wewe ni Mwalimu Mkuu wa IT (AI Learning Program) nchini Tanzania.
-    
-    MAELEKEZO:
-    1. Jibu kwa Kiswahili rahisi na cha kawaida
-    2. Tumia mifano halisi ya kila siku
-    3. Toa hatua kwa hatua (step by step)
-    4. Tumia emojis kufanya iwe rahisi kuelewa
-    5. Mwisho wa jibu, uliza "Je, umeelewa? Au una swali lingine?"
-    6. Kumbuka: Wateja wako ni Watanzania wanaojifunza IT
-    7. Pale unapohitaji, washauri kuwasiliana na RAMADHAN KAJALA (0748755636)"""
+        return jsonify({"response": "Tafadhali andika swali lako."})
     
     # Jaribu DeepSeek AI
     if DEEPSEEK_API_KEY and DEEPSEEK_API_KEY != "sk-your-api-key-here":
@@ -205,32 +152,28 @@ def ask():
             data = {
                 "model": "deepseek-chat",
                 "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Mada: {topic}\nSwali: {user_input}"}
+                    {"role": "system", "content": "Wewe ni mwalimu wa IT unawafundisha Watanzania kwa Kiswahili."},
+                    {"role": "user", "content": user_input}
                 ],
                 "temperature": 0.7,
-                "max_tokens": 1500
+                "max_tokens": 1000
             }
             response = requests.post(DEEPSEEK_API_URL, json=data, headers=headers, timeout=30)
             if response.status_code == 200:
                 result = response.json()["choices"][0]["message"]["content"]
                 return jsonify({"response": result, "ai": "DeepSeek"})
-        except:
+        except Exception as e:
+            # Ikiwa DeepSeek inakosea, endelea na majibu ya msingi
             pass
     
-    # Fallback
+    # Fallback - Majibu ya msingi
     return jsonify({
-        "response": f"""📚 **Mwalimu wa IT**
+        "response": """📚 **Mwalimu wa IT**
 
-Swali lako: "{user_input}"
+Swali lako limepokelewa!
 
-✅ **Jibu:**
-
-Samahani, mfumo wa AI haupatikani kwa sasa. Lakini niko hapa kukusaidia!
-
-📞 **Wasiliana nami moja kwa moja:**
-👤 RAMADHAN KAJALA
-📱 0748755636
+✅ Kwa msaada, wasiliana nami:
+📞 RAMADHAN KAJALA - 0748755636
 💬 WhatsApp: 0748755636
 
 🌟 **Huduma Zetu:**
@@ -242,28 +185,11 @@ Samahani, mfumo wa AI haupatikani kwa sasa. Lakini niko hapa kukusaidia!
 🛠️ IT Support
 📝 Word Typing Services
 
-📺 **Tazama mafunzo ya video:**
-• Bro Code: youtube.com/@BroCodez
-• freeCodeCamp: youtube.com/@freecodecamp
-• Traversy Media: youtube.com/@TraversyMedia
+📺 Tazama mafunzo ya video kwenye sehemu ya Video Resources.
 
 Nitakusaidia haraka! 💪""",
         "ai": "Offline"
     })
 
 if __name__ == "__main__":
-    print("""
-    ╔══════════════════════════════════════════════════════════╗
-    ║                                                          ║
-    ║    🌍 AI LEARNING & SERVICES PRO - INTERNATIONAL        ║
-    ║                                                          ║
-    ║    🌐 http://127.0.0.1:5000                            ║
-    ║    📞 RAMADHAN KAJALA - 0748755636                     ║
-    ║    📍 Bukoba Mjini - Hospitali ya Bukoba               ║
-    ║                                                          ║
-    ║    🤖 Powered by DeepSeek AI                          ║
-    ║    🔗 https://www.deepseek.com/en/                     ║
-    ║                                                          ║
-    ╚══════════════════════════════════════════════════════════╝
-    """)
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
